@@ -18,8 +18,77 @@ env.CocoEvolutionRunningJob = game.JobId
 local state = env.CocoEvolutionState or {phase = "scan", index = 1, bestHeight = -1}
 env.CocoEvolutionState = nil
 
+local function makeStatusGui()
+    local parent
+    if type(gethui) == "function" then
+        local ok, result = pcall(gethui)
+        if ok then parent = result end
+    end
+    parent = parent or LocalPlayer:WaitForChild("PlayerGui")
+    local old = parent:FindFirstChild("CocoEvolutionStatus")
+    if old then old:Destroy() end
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "CocoEvolutionStatus"
+    gui.ResetOnSpawn = false
+    gui.DisplayOrder = 100
+    gui.Parent = parent
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.fromOffset(270, 112)
+    frame.Position = UDim2.fromOffset(20, 100)
+    frame.BackgroundColor3 = Color3.fromRGB(28, 30, 38)
+    frame.BorderSizePixel = 0
+    frame.Active = true
+    frame.Draggable = true
+    frame.Parent = gui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -16, 0, 28)
+    title.Position = UDim2.fromOffset(8, 4)
+    title.BackgroundTransparency = 1
+    title.Font = Enum.Font.SourceSansBold
+    title.TextSize = 18
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Text = "Coco Evolution"
+    title.Parent = frame
+
+    local detail = Instance.new("TextLabel")
+    detail.Size = UDim2.new(1, -16, 0, 48)
+    detail.Position = UDim2.fromOffset(8, 33)
+    detail.BackgroundTransparency = 1
+    detail.Font = Enum.Font.SourceSans
+    detail.TextSize = 15
+    detail.TextColor3 = Color3.fromRGB(220, 225, 235)
+    detail.TextXAlignment = Enum.TextXAlignment.Left
+    detail.TextYAlignment = Enum.TextYAlignment.Top
+    detail.TextWrapped = true
+    detail.Text = "Starting server scan..."
+    detail.Parent = frame
+
+    local stats = Instance.new("TextLabel")
+    stats.Size = UDim2.new(1, -16, 0, 22)
+    stats.Position = UDim2.fromOffset(8, 84)
+    stats.BackgroundTransparency = 1
+    stats.Font = Enum.Font.SourceSans
+    stats.TextSize = 14
+    stats.TextColor3 = Color3.fromRGB(140, 215, 175)
+    stats.TextXAlignment = Enum.TextXAlignment.Left
+    stats.Text = "Targets: 8'4 @ 1  |  20'0 @ 18"
+    stats.Parent = frame
+    return detail, stats
+end
+
+local detailLabel, statsLabel = makeStatusGui()
+
 local function status(message)
     print("[Coco Evolution] " .. message)
+    detailLabel.Text = message
 end
 
 local function feetAndInches(text)
@@ -197,6 +266,7 @@ while true do
         local age, height = ageOf(LocalPlayer), heightOf(LocalPlayer)
         if age and height then
             sawStats = true
+            statsLabel.Text = "Age: " .. age .. "  |  Height: " .. height .. " in  |  Resets: " .. attempts
             if (age == 1 and height == 100) or (age == 18 and height == 240) then
                 status("Target reached at age " .. age .. " and height " .. height .. " inches after " .. attempts .. " resets")
                 env.CocoEvolutionRunningJob = nil
