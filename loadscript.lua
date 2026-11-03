@@ -22,6 +22,113 @@ local function status(message)
     print("[Coco Evolution] " .. message)
 end
 
+local function makeTeleportGui()
+    local parent = (type(gethui) == "function" and gethui()) or game:GetService("CoreGui")
+    local old = parent:FindFirstChild("CocoEvolutionTeleport")
+    if old then old:Destroy() end
+
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "CocoEvolutionTeleport"
+    gui.ResetOnSpawn = false
+    gui.Parent = parent
+
+    local frame = Instance.new("Frame")
+    frame.Name = "PlayerTeleport"
+    frame.Size = UDim2.fromOffset(220, 270)
+    frame.Position = UDim2.fromOffset(20, 100)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+    frame.BorderSizePixel = 0
+    frame.Active = true
+    frame.Draggable = true
+    frame.Parent = gui
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -36, 0, 32)
+    title.Position = UDim2.fromOffset(8, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "TP to player"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.TextSize = 17
+    title.Font = Enum.Font.SourceSansBold
+    title.Parent = frame
+
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.fromOffset(28, 28)
+    toggle.Position = UDim2.new(1, -32, 0, 2)
+    toggle.BackgroundTransparency = 1
+    toggle.Text = "−"
+    toggle.TextColor3 = Color3.new(1, 1, 1)
+    toggle.TextSize = 22
+    toggle.Parent = frame
+
+    local list = Instance.new("ScrollingFrame")
+    list.Size = UDim2.new(1, -12, 1, -40)
+    list.Position = UDim2.fromOffset(6, 36)
+    list.BackgroundTransparency = 1
+    list.BorderSizePixel = 0
+    list.ScrollBarThickness = 5
+    list.CanvasSize = UDim2.fromOffset(0, 0)
+    list.Parent = frame
+
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 4)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = list
+    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        list.CanvasSize = UDim2.fromOffset(0, layout.AbsoluteContentSize.Y + 4)
+    end)
+
+    toggle.MouseButton1Click:Connect(function()
+        list.Visible = not list.Visible
+        frame.Size = UDim2.fromOffset(220, list.Visible and 270 or 34)
+        toggle.Text = list.Visible and "−" or "+"
+    end)
+
+    local function rebuild()
+        for _, child in ipairs(list:GetChildren()) do
+            if child:IsA("TextButton") then child:Destroy() end
+        end
+        local others = {}
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then table.insert(others, player) end
+        end
+        table.sort(others, function(a, b) return a.Name:lower() < b.Name:lower() end)
+        for index, player in ipairs(others) do
+            local button = Instance.new("TextButton")
+            button.Name = player.Name
+            button.Size = UDim2.new(1, -6, 0, 30)
+            button.LayoutOrder = index
+            button.BackgroundColor3 = Color3.fromRGB(48, 48, 57)
+            button.BorderSizePixel = 0
+            button.Text = player.DisplayName .. " (@" .. player.Name .. ")"
+            button.TextColor3 = Color3.new(1, 1, 1)
+            button.TextSize = 14
+            button.Font = Enum.Font.SourceSans
+            button.Parent = list
+            button.MouseButton1Click:Connect(function()
+                local target = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                local mine = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if target and mine then
+                    mine.CFrame = target.CFrame * CFrame.new(3, 0, 0)
+                    status("Teleported to " .. player.Name)
+                else
+                    status("Cannot TP to " .. player.Name .. " until both characters spawn")
+                end
+            end)
+        end
+    end
+
+    Players.PlayerAdded:Connect(rebuild)
+    Players.PlayerRemoving:Connect(function(player)
+        local button = list:FindFirstChild(player.Name)
+        if button then button:Destroy() end
+    end)
+    rebuild()
+end
+
+makeTeleportGui()
+
 local function feetAndInches(text)
     text = tostring(text)
     local feet, inches = text:match("(%d+)%s*['′]%s*(%d+)")
